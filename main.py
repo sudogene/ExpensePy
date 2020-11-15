@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 
-pd.set_option('display.max_rows', 10)
+#pd.set_option('display.max_rows', 10)
 
 
 class Entry:
@@ -184,7 +184,7 @@ class ExpenseManager:
         filtered_df = self._get_grouped_datebalance()
         usage_list = []
 
-        for i in range(len(filtered_df['date']) - 1):
+        for i in range(len(filtered_df['balance']) - 1):
             balance_before = filtered_df['balance'][i]
             balance_after = filtered_df['balance'][i + 1]
             usage_list.append(round(balance_after - balance_before, 2))
@@ -220,7 +220,6 @@ class ExpenseManager:
 def get_confirmation():
     confirmation = input("Are you sure? y/n\n!>> ")
     return confirmation.lower() == 'y'
-
 
 def parse_date(date_string):
     if date_string == 'yesterday':
