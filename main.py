@@ -5,6 +5,9 @@ from datetime import timedelta
 from matplotlib import pyplot as plt
 
 
+pd.set_option('display.max_rows', 10)
+
+
 class Entry:
     def __init__(self, date=dt.date.today(), category=None, credit=0.0, debit=0.0, remark=None, balance=None):
         self.date = parse_date(date) if isinstance(date, str) else date
@@ -175,7 +178,7 @@ class ExpenseManager:
     def plot(self):
         df_to_plot = self._get_grouped_datebalance()
 
-        plt.figure('ExpenseManager')
+        #plt.figure('ExpenseManager')
         dummy = df_to_plot['date'][0]
         plt.title(f'{dummy.strftime("%B")} {dummy.year}')
         plt.xlabel('Day of month')
@@ -200,22 +203,27 @@ def parse_date(date_string):
         return dt.date.today() - timedelta(days=1)
     return dt.datetime.strptime(date_string, "%Y-%m-%d").date()
 
-
 def get_today():
     return dt.date.today()
 
+def is_currency(string):
+    try:
+        float(string)
+        return True
+    except Exception:
+        return False
 
-def handle_new_user():
+def handle_new_user(filename):
     input_message = "? What is your balance now\n$>> "
     error_message = "! Balance must be numeric!"
 
     balance = input(input_message)
-    while not balance.isnumeric():
+    while not is_currency(balance):
         print(error_message)
         balance = input(input_message)
     balance = round(float(balance), 2)
 
-    with open('data.csv', 'w') as file:
+    with open(filename, 'w') as file:
         file.write('date,category,credit,debit,remark,balance\n')
         file.write(f'{get_today()},,0.0,0.0,,{balance}\n')
 
@@ -223,8 +231,8 @@ def handle_new_user():
 
 
 if __name__ == '__main__':
-    if 'data.csv' not in os.listdir():
-        handle_new_user()
+    default_filename = 'data.csv'
+    if default_filename not in os.listdir():
+        handle_new_user(default_filename)
 
-    filename = 'data.csv'
-    m = ExpenseManager(filename)
+    m = ExpenseManager(default_filename)
