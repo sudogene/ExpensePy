@@ -227,7 +227,7 @@ def handle_new_user(filename):
         file.write('date,category,credit,debit,remark,balance\n')
         file.write(f'{get_today()},,0.0,0.0,,{balance}\n')
 
-    print('New csv file has been created: data.csv')
+    print(f'New csv file has been created: {filename}')
 
 
 if __name__ == '__main__':
