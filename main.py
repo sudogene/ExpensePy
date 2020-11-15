@@ -3,6 +3,7 @@ import pandas as pd
 import datetime as dt
 from datetime import timedelta
 from matplotlib import pyplot as plt
+import numpy as np
 
 
 pd.set_option('display.max_rows', 10)
@@ -115,8 +116,28 @@ class ExpenseManager:
         return filtered_df
 
     def _get_grouped_datebalance(self):
-        filtered_df = self._get_df_by_month()
-        return filtered_df[['date', 'balance']].groupby('date', as_index=False).agg(lambda s: s.iloc[-1])
+        """
+        Converts the DataFrame into a date-indexed, grouped and filled, DataFrame.
+        Example:
+            
+               date        balance         date        balance
+            0  2020-11-05  10.00           2020-11-05  10.00
+            1  2020-11-06   6.00    -->    2020-11-06   6.00
+            2  2020-11-08  15.00           2020-11-07   6.00
+                                           2020-11-08  15.50
+        
+        Changes: Index replaced with date, date rows filled with previous balance.
+        """
+
+        fdf = self._get_df_by_month()
+        fdf = fdf[['date', 'balance']].groupby('date', as_index=False).agg(lambda s: s.iloc[-1])
+        
+        fdf.index = fdf['date']
+        fdf = fdf.drop(columns='date')
+        filled_fdf = fdf.asfreq('D').fillna(method='ffill')
+
+        return filled_fdf
+
 
     ''' ################# CRUD methods ################# '''
 
@@ -178,14 +199,17 @@ class ExpenseManager:
     def plot(self):
         df_to_plot = self._get_grouped_datebalance()
 
-        #plt.figure('ExpenseManager')
-        dummy = df_to_plot['date'][0]
-        plt.title(f'{dummy.strftime("%B")} {dummy.year}')
+        plt.figure('ExpenseManager')
+        date = df_to_plot.index[0].date()
+        plt.title(f'{date.strftime("%B")} {date.year}')
         plt.xlabel('Day of month')
         plt.ylabel('Balance')
+        plt.grid(True)
 
-        df_to_plot['date'] = df_to_plot['date'].map(lambda d: d.day)
-        plt.plot(df_to_plot['date'], df_to_plot['balance'])
+        x = list(df_to_plot.index.map(lambda d: d.day))
+        y = df_to_plot['balance']
+        plt.plot(x, y)
+        plt.xticks(x)
 
         plt.show()
 
