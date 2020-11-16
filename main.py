@@ -10,6 +10,11 @@ import numpy as np
 
 
 class Entry:
+    """
+    Represents an expense entry as a wrapped dict in the following format with default values:
+        { date: today, category: None, credit: 0.0, debit: 0.0, remark: None, balance: None }
+    """
+
     def __init__(self, date=dt.date.today(), category=None, credit=0.0, debit=0.0, remark=None, balance=None):
         self.date = parse_date(date) if isinstance(date, str) else date
         self.category = category
@@ -67,7 +72,19 @@ class Dinner(Food):
             super().__init__(food_debit, "Dinner")
 
 
+class Coffee(Food):
+    def __init__(self, food_debit, food_date=None):
+        if food_date:
+            super().__init__(food_debit, "Coffee", food_date)
+        else:
+            super().__init__(food_debit, "Coffee")
+
+
 class ExpenseManager:
+    """
+    Main class for managing expense entries, file IO, and data analysis.
+    """
+
     def __init__(self, csv_filename):
         self.filename = csv_filename
         self.df = pd.read_csv(csv_filename,
