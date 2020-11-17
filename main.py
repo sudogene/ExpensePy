@@ -3,10 +3,9 @@ import pandas as pd
 import datetime as dt
 from datetime import timedelta
 from matplotlib import pyplot as plt
-import numpy as np
 
 
-#pd.set_option('display.max_rows', 10)
+# pd.set_option('display.max_rows', 10)
 
 
 class Entry:
@@ -148,13 +147,20 @@ class ExpenseManager:
 
         fdf = self._get_df_by_month()
         fdf = fdf[['date', 'balance']].groupby('date', as_index=False).agg(lambda s: s.iloc[-1])
-        
+
         fdf.index = fdf['date']
         fdf = fdf.drop(columns='date')
         filled_fdf = fdf.asfreq('D').fillna(method='ffill')
 
         return filled_fdf
 
+    def _is_validentry_for_insert(self, index, entry_toinsert):
+        if index not in range(len(self.df) - 1):
+            return False
+        insert_date = entry_toinsert.date
+        if insert_date < self.df.iloc[index]['date'] or insert_date > self.df.iloc[index + 1]['date']:
+            return False
+        return True
 
     ''' ################# CRUD methods ################# '''
 
@@ -164,7 +170,29 @@ class ExpenseManager:
 
         self._add_entry(expense_entry.entry())
         self._save_file()
-        print(f"Added entry.")
+        print('Added entry.')
+
+    '''
+    def insert(self, index, expense_entry):
+        index = int(index)
+        if not self._is_validentry_for_insert(index, expense_entry):
+            print("Entry is not valid for insertion.")
+            return
+
+        i = index - 0.5
+        expense_entry.balance = self.df.iloc[index]['balance'] + expense_entry['credit'] - expense_entry['debit']
+
+        e = expense_entry.entry()
+
+        self.df.loc[i] = e
+        self.df = self.df.sort_index().reset_index(drop=True)
+        self.df.loc[index + 1:, 'balance'] = self.df.loc[index + 1:]['balance']\
+            .apply(lambda b: b + e['credit'] - e['debit'])
+        
+        # CURRENTLY DOES NOT UPDATE THE index + 1 ENTRY'S BALANCE!
+        # self._save_file()
+        print('Inserted entry.')
+        '''
 
     def clear(self):
         if get_confirmation():
@@ -238,13 +266,16 @@ def get_confirmation():
     confirmation = input("Are you sure? y/n\n!>> ")
     return confirmation.lower() == 'y'
 
+
 def parse_date(date_string):
     if date_string == 'yesterday':
         return dt.date.today() - timedelta(days=1)
     return dt.datetime.strptime(date_string, "%Y-%m-%d").date()
 
+
 def get_today():
     return dt.date.today()
+
 
 def is_currency(string):
     try:
@@ -252,6 +283,7 @@ def is_currency(string):
         return True
     except Exception:
         return False
+
 
 def handle_new_user(filename):
     input_message = "? What is your balance now\n$>> "
