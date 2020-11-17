@@ -281,7 +281,7 @@ def is_currency(string):
     try:
         float(string)
         return True
-    except Exception:
+    except ValueError or TypeError:
         return False
 
 
