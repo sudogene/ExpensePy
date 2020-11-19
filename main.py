@@ -79,6 +79,22 @@ class Coffee(Food):
             super().__init__(food_debit, "Coffee")
 
 
+class Bill(Entry):
+    def __init__(self, bill_debit, bill_remark, bill_date=None):
+        if bill_date:
+            super().__init__(date=bill_date, category="Bill", debit=bill_debit, remark=bill_remark)
+        else:
+            super().__init__(category="Bill", debit=bill_debit, remark=bill_remark)
+
+
+class Misc(Entry):
+    def __init__(self, misc_debit, misc_remark, misc_date=None):
+        if misc_date:
+            super().__init__(date=misc_date, category="Misc", debit=misc_debit, remark=misc_remark)
+        else:
+            super().__init__(category="Misc", debit=misc_debit, remark=misc_remark)
+
+
 class ExpenseManager:
     """
     Main class for managing expense entries, file IO, and data analysis.
@@ -155,12 +171,14 @@ class ExpenseManager:
         return filled_fdf
 
     def _is_validentry_for_insert(self, index, entry_toinsert):
-        if index not in range(len(self.df) - 1):
+        if index not in range(len(self.df)):
             return False
-        insert_date = entry_toinsert.date
-        if insert_date < self.df.iloc[index]['date'] or insert_date > self.df.iloc[index + 1]['date']:
-            return False
-        return True
+        date = entry_toinsert.date
+        if date == self.df.iloc[index]['date']:
+            return True
+        elif date < self.df.iloc[index]['date']:
+            return date >= self.df.iloc[index - 1]['date']
+        return False
 
     ''' ################# CRUD methods ################# '''
 
@@ -172,7 +190,7 @@ class ExpenseManager:
         self._save_file()
         print('Added entry.')
 
-    '''
+    
     def insert(self, index, expense_entry):
         index = int(index)
         if not self._is_validentry_for_insert(index, expense_entry):
@@ -180,8 +198,7 @@ class ExpenseManager:
             return
 
         i = index - 0.5
-        expense_entry.balance = self.df.iloc[index]['balance'] + expense_entry['credit'] - expense_entry['debit']
-
+        expense_entry.balance = self.df.iloc[index - 1]['balance'] + expense_entry['credit'] - expense_entry['debit']
         e = expense_entry.entry()
 
         self.df.loc[i] = e
@@ -189,10 +206,9 @@ class ExpenseManager:
         self.df.loc[index + 1:, 'balance'] = self.df.loc[index + 1:]['balance']\
             .apply(lambda b: b + e['credit'] - e['debit'])
         
-        # CURRENTLY DOES NOT UPDATE THE index + 1 ENTRY'S BALANCE!
-        # self._save_file()
+        self._save_file()
         print('Inserted entry.')
-        '''
+        
 
     def clear(self):
         if get_confirmation():
@@ -225,7 +241,7 @@ class ExpenseManager:
             return filtered_df.tail(num[0])
         return filtered_df
 
-    def usage(self):
+    def usage(self, format=True):
         filtered_df = self._get_grouped_datebalance()
         usage_list = []
 
@@ -234,9 +250,14 @@ class ExpenseManager:
             balance_after = filtered_df['balance'][i + 1]
             usage_list.append(round(balance_after - balance_before, 2))
 
-        string_usage_list = list(map(lambda u: str(u) if u <= 0 else f'+{u}', usage_list))
-        string_usage_list.insert(0, '')
-        filtered_df['usage'] = string_usage_list
+        if format:
+            res_list = list(map(lambda u: str(u) if u <= 0 else f'+{str(u)}', usage_list))
+            res_list.insert(0, '')
+        else:
+            res_list = usage_list
+            res_list.insert(0, 0)
+        filtered_df['usage'] = res_list
+
         return filtered_df
 
     ''' ################# Stats methods ################# '''
@@ -256,6 +277,7 @@ class ExpenseManager:
         plt.plot(x, y)
         plt.xticks(x)
 
+        print(f'Plot of Balance over Day for {date.strftime("%B")} {date.year}')
         plt.show()
 
 
